@@ -1,12 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { race } from '../src/race.js';
 import {
-  deferred,
   gate,
   recorder,
   signalAwareWorker,
-  trackUnhandledRejections,
   tick,
+  trackUnhandledRejections,
 } from './helpers/adversarial.js';
 
 describe('race: enumeration semantics', () => {
@@ -149,7 +148,9 @@ describe('race: strong settlement torture', () => {
       async (signal) => {
         try {
           await new Promise((_r, rej) => {
-            signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+            signal.addEventListener('abort', () => rej(signal.reason), {
+              once: true,
+            });
           });
           return 'loser';
         } finally {
@@ -195,7 +196,9 @@ describe('race: storm', () => {
     try {
       const workers = [];
       for (let i = 0; i < 100; i++) {
-        workers.push(signalAwareWorker(`r${i}`, recorder(), { finishDelayMs: 5 }));
+        workers.push(
+          signalAwareWorker(`r${i}`, recorder(), { finishDelayMs: 5 }),
+        );
       }
       workers.push(async () => 'win');
       await expect(race(workers)).resolves.toBe('win');
@@ -211,7 +214,9 @@ describe('race: storm', () => {
     try {
       const workers = [];
       for (let i = 0; i < 1000; i++) {
-        workers.push(signalAwareWorker(`q${i}`, recorder(), { finishDelayMs: 5 }));
+        workers.push(
+          signalAwareWorker(`q${i}`, recorder(), { finishDelayMs: 5 }),
+        );
       }
       workers.push(async () => {
         throw new Error('early-reject');

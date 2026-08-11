@@ -1,17 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { scope } from '../src/scope.js';
 import {
   deferred,
   gate,
   recorder,
   signalAwareWorker,
-  trackUnhandledRejections,
   tick,
+  trackUnhandledRejections,
 } from './helpers/adversarial.js';
 
 describe('scope: adversarial races', () => {
   it('callback resolves while child rejects → child error wins', async () => {
-    const rec = recorder();
     const childDone = deferred<void>();
     const p = scope(async (s) => {
       s.spawn(async () => {
@@ -32,7 +31,9 @@ describe('scope: adversarial races', () => {
       await Promise.race([
         childGate.wait(),
         new Promise<never>((_, rej) =>
-          signal.addEventListener('abort', () => rej(signal.reason), { once: true }),
+          signal.addEventListener('abort', () => rej(signal.reason), {
+            once: true,
+          }),
         ),
       ]);
       return 'child';
@@ -50,7 +51,7 @@ describe('scope: adversarial races', () => {
     const ctrl = new AbortController();
     const cbGate = gate();
     const p = scope(
-      async (s) => {
+      async () => {
         await cbGate.wait();
         return 'cb-done';
       },
@@ -98,7 +99,11 @@ describe('scope: adversarial races', () => {
       ).rejects.toThrow(/first|second/);
       // both observed; no unhandled
       await tick();
-      expect(stop.observed.filter((u) => String(u).includes('first') || String(u).includes('second'))).toHaveLength(0);
+      expect(
+        stop.observed.filter(
+          (u) => String(u).includes('first') || String(u).includes('second'),
+        ),
+      ).toHaveLength(0);
     } finally {
       stop.stop();
     }
@@ -233,11 +238,14 @@ describe('scope: adversarial races', () => {
     ctrl.abort(new Error('pre'));
     const rec = recorder();
     await expect(
-      scope(async (s) => {
-        rec.push('callback-ran');
-        s.spawn(async () => 'x');
-        return 'never';
-      }, { signal: ctrl.signal }),
+      scope(
+        async (s) => {
+          rec.push('callback-ran');
+          s.spawn(async () => 'x');
+          return 'never';
+        },
+        { signal: ctrl.signal },
+      ),
     ).rejects.toThrow('pre');
     // callback body never executed (signal already aborted)
     expect(rec.includes('callback-ran')).toBe(false);
@@ -249,7 +257,9 @@ describe('scope: adversarial races', () => {
       scope(async (s) => {
         s.spawn(async () => {
           try {
-            await new Promise((_r, rej) => setTimeout(() => rej(new Error('f')), 1));
+            await new Promise((_r, rej) =>
+              setTimeout(() => rej(new Error('f')), 1),
+            );
           } finally {
             rec.push('cleanup');
           }
@@ -331,9 +341,7 @@ describe('scope: spawn storm', () => {
                 throw new Error('the-one');
               });
             } else {
-              s.spawn(
-                signalAwareWorker(`w${i}`, rec, { finishDelayMs: 5 }),
-              );
+              s.spawn(signalAwareWorker(`w${i}`, rec, { finishDelayMs: 5 }));
             }
           }
         }),

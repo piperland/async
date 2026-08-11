@@ -1,11 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { map } from '../src/map.js';
 import {
   controlledAsyncIterable,
-  deferred,
   recorder,
-  trackUnhandledRejections,
   tick,
+  trackUnhandledRejections,
 } from './helpers/adversarial.js';
 
 describe('map: pull discipline', () => {
@@ -89,9 +88,9 @@ describe('map: async iterable abuse', () => {
           throw new Error('next-fail');
         },
       });
-      await expect(map(iterable, async (x) => x, { concurrency: 2 })).rejects.toThrow(
-        'next-fail',
-      );
+      await expect(
+        map(iterable, async (x) => x, { concurrency: 2 }),
+      ).rejects.toThrow('next-fail');
       await tick();
       expect(stop.observed).toHaveLength(0);
     } finally {
@@ -143,8 +142,13 @@ describe('map: async iterable abuse', () => {
   it('yield pauses indefinitely + parent aborts → map rejects with abort reason', async () => {
     const ctrl = new AbortController();
     const reason = new Error('map-abort');
-    const { iterable } = controlledAsyncIterable([1, 2, 3], { nextDelayMs: 50 });
-    const p = map(iterable, async (x) => x, { concurrency: 2, signal: ctrl.signal });
+    const { iterable } = controlledAsyncIterable([1, 2, 3], {
+      nextDelayMs: 50,
+    });
+    const p = map(iterable, async (x) => x, {
+      concurrency: 2,
+      signal: ctrl.signal,
+    });
     ctrl.abort(reason);
     await expect(p).rejects.toBe(reason);
   });
@@ -159,7 +163,10 @@ describe('map: async iterable abuse', () => {
         nextDelayMs: 100,
         returns,
       });
-      const p = map(iterable, async (x) => x, { concurrency: 2, signal: ctrl.signal });
+      const p = map(iterable, async (x) => x, {
+        concurrency: 2,
+        signal: ctrl.signal,
+      });
       setTimeout(() => ctrl.abort(reason), 5);
       await expect(p).rejects.toBe(reason);
       await tick();
@@ -207,7 +214,9 @@ describe('map: worker failure storm', () => {
             if (x === 25) throw new Error('the-fail');
             try {
               await new Promise((res, rej) => {
-                signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+                signal.addEventListener('abort', () => rej(signal.reason), {
+                  once: true,
+                });
                 // resolves after 30ms so runners free up and pull later items;
                 // on abort, rejects so the runner exits.
                 setTimeout(() => res(x), 30);

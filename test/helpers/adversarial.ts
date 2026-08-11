@@ -209,7 +209,11 @@ export function trackUnhandledRejections(): {
 export function signalAwareWorker(
   name: string,
   rec: { push: (e: string) => void },
-  opts: { ignoreAbort?: boolean; resolveOnAbort?: boolean; finishDelayMs?: number } = {},
+  opts: {
+    ignoreAbort?: boolean;
+    resolveOnAbort?: boolean;
+    finishDelayMs?: number;
+  } = {},
 ) {
   return async (signal: AbortSignal): Promise<string> => {
     rec.push(`${name}:start`);

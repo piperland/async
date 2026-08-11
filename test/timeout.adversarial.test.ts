@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { timeout } from '../src/timeout.js';
-import { deferred, gate, trackUnhandledRejections, tick } from './helpers/adversarial.js';
+import {
+  deferred,
+  tick,
+  trackUnhandledRejections,
+} from './helpers/adversarial.js';
 
 describe('timeout: adversarial matrix', () => {
   it('worker resolves just before timeout', async () => {
@@ -24,19 +28,25 @@ describe('timeout: adversarial matrix', () => {
   it('worker resolves just after timeout fires → TimeoutError wins', async () => {
     const worker = async (signal: AbortSignal) => {
       await new Promise((_r, rej) => {
-        signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+        signal.addEventListener('abort', () => rej(signal.reason), {
+          once: true,
+        });
         // deliberately slow; timeout fires first
       });
       return 'never';
     };
-    await expect(timeout(worker, 10)).rejects.toMatchObject({ name: 'TimeoutError' });
+    await expect(timeout(worker, 10)).rejects.toMatchObject({
+      name: 'TimeoutError',
+    });
   });
 
   it('worker rejects same turn timeout fires → worker error if first', async () => {
     // worker fails at ~5ms, timeout at 100ms → worker error
     await expect(
       timeout(async () => {
-        await new Promise((_r, rej) => setTimeout(() => rej(new Error('worker-fail')), 5));
+        await new Promise((_r, rej) =>
+          setTimeout(() => rej(new Error('worker-fail')), 5),
+        );
         return 'never';
       }, 100),
     ).rejects.toThrow('worker-fail');
@@ -47,7 +57,9 @@ describe('timeout: adversarial matrix', () => {
     const reason = new Error('parent-stop');
     const worker = async (signal: AbortSignal) => {
       await new Promise((_r, rej) => {
-        signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+        signal.addEventListener('abort', () => rej(signal.reason), {
+          once: true,
+        });
       });
       return 'never';
     };
@@ -61,7 +73,9 @@ describe('timeout: adversarial matrix', () => {
     const worker = async (signal: AbortSignal) => {
       try {
         await new Promise((_r, rej) => {
-          signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+          signal.addEventListener('abort', () => rej(signal.reason), {
+            once: true,
+          });
         });
         return 'never';
       } finally {
@@ -70,7 +84,9 @@ describe('timeout: adversarial matrix', () => {
         rec.push('cleanup-done');
       }
     };
-    await expect(timeout(worker, 5)).rejects.toMatchObject({ name: 'TimeoutError' });
+    await expect(timeout(worker, 5)).rejects.toMatchObject({
+      name: 'TimeoutError',
+    });
     expect(rec).toContain('cleanup-done');
   });
 
@@ -83,7 +99,9 @@ describe('timeout: adversarial matrix', () => {
     const worker = async (signal: AbortSignal) => {
       try {
         await new Promise((_r, rej) => {
-          signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+          signal.addEventListener('abort', () => rej(signal.reason), {
+            once: true,
+          });
         });
         return 'never';
       } finally {
@@ -104,7 +122,9 @@ describe('timeout: adversarial matrix', () => {
 describe('timeout: zero-timeout torture', () => {
   it('sync return worker + 0ms → TimeoutError (microtask can beat setTimeout)', async () => {
     // 0ms must abort synchronously before the worker's microtask resolution
-    await expect(timeout(async () => 'ok', 0)).rejects.toMatchObject({ name: 'TimeoutError' });
+    await expect(timeout(async () => 'ok', 0)).rejects.toMatchObject({
+      name: 'TimeoutError',
+    });
   });
 
   it('sync throw worker + 0ms → TimeoutError (abort wins)', async () => {
@@ -116,27 +136,23 @@ describe('timeout: zero-timeout torture', () => {
   });
 
   it('immediate resolved promise + 0ms → TimeoutError', async () => {
-    await expect(timeout(() => Promise.resolve('ok'), 0)).rejects.toMatchObject({ name: 'TimeoutError' });
+    await expect(timeout(() => Promise.resolve('ok'), 0)).rejects.toMatchObject(
+      { name: 'TimeoutError' },
+    );
   });
 
   it('microtask resolution + 0ms → TimeoutError', async () => {
     await expect(
-      timeout(
-        () => new Promise((r) => queueMicrotask(() => r('ok'))),
-        0,
-      ),
+      timeout(() => new Promise((r) => queueMicrotask(() => r('ok'))), 0),
     ).rejects.toMatchObject({ name: 'TimeoutError' });
   });
 
   it('signal-aware immediate abort + 0ms → TimeoutError', async () => {
     await expect(
-      timeout(
-        (signal) => {
-          if (signal.aborted) throw signal.reason;
-          return 'never';
-        },
-        0,
-      ),
+      timeout((signal) => {
+        if (signal.aborted) throw signal.reason;
+        return 'never';
+      }, 0),
     ).rejects.toMatchObject({ name: 'TimeoutError' });
   });
 
@@ -173,11 +189,15 @@ describe('timeout: resource retention', () => {
     for (let i = 0; i < 100; i++) {
       const worker = async (signal: AbortSignal) => {
         await new Promise((_r, rej) => {
-          signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+          signal.addEventListener('abort', () => rej(signal.reason), {
+            once: true,
+          });
         });
         return 'never';
       };
-      await expect(timeout(worker, 30)).rejects.toMatchObject({ name: 'TimeoutError' });
+      await expect(timeout(worker, 30)).rejects.toMatchObject({
+        name: 'TimeoutError',
+      });
     }
     // 100 * ~31ms ≈ 3.1s. Proves no cumulative slowdown (each iteration the
     // same duration; if listeners accumulated, later iterations would slow).
@@ -190,6 +210,8 @@ describe('timeout: resource retention', () => {
       await new Promise((r) => setTimeout(r, 30));
       return 'u';
     };
-    await expect(timeout(worker, 5)).rejects.toMatchObject({ name: 'TimeoutError' });
+    await expect(timeout(worker, 5)).rejects.toMatchObject({
+      name: 'TimeoutError',
+    });
   });
 });

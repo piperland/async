@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { scope, retry, timeout, race, map } from '../src/index.js';
-import { trackUnhandledRejections, tick } from './helpers/adversarial.js';
+// The thenable factories below deliberately define a `then` property; they
+// exist to test hostile/unusual thenables, so the `noThenProperty` rule does
+// not apply in this file.
+// biome-ignore-all lint/suspicious/noThenProperty: intentional thenable torture
+import { describe, expect, it } from 'vitest';
+import { map, race, retry, scope, timeout } from '../src/index.js';
+import { tick, trackUnhandledRejections } from './helpers/adversarial.js';
 
 // ---- Hostile thenable factories ----
 function syncResolveThenable<T>(v: T): PromiseLike<T> {
@@ -90,7 +94,9 @@ describe('thenable torture', () => {
 
   it('spawn: reject-after-resolve thenable → resolve wins', async () => {
     await scope(async (s) => {
-      const r = await s.spawn(() => rejectAfterResolveThenable('v', new Error('late')));
+      const r = await s.spawn(() =>
+        rejectAfterResolveThenable('v', new Error('late')),
+      );
       expect(r).toBe('v');
     });
   });
@@ -169,7 +175,9 @@ describe('thenable torture', () => {
   });
 
   it('map: sync-resolve thenable mapper', async () => {
-    const r = await map([1, 2], (x) => syncResolveThenable(x * 10), { concurrency: 2 });
+    const r = await map([1, 2], (x) => syncResolveThenable(x * 10), {
+      concurrency: 2,
+    });
     expect(r).toEqual([10, 20]);
   });
 });

@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { scope, retry } from '../src/index.js';
-import { runManyRandom } from './helpers/randomized.js';
+import { describe, expect, it } from 'vitest';
+import { retry, scope } from '../src/index.js';
 import { gate, pick, randInt } from './helpers/adversarial.js';
+import { runManyRandom } from './helpers/randomized.js';
 
 // Randomized scenario: scope with random child actions + random aborts + random
 // gates. Each seed is deterministic; failures print the seed.
@@ -15,7 +15,12 @@ describe('randomized scope schedules', () => {
           async (s) => {
             const nChildren = randInt(rng, 0, 4);
             for (let i = 0; i < nChildren; i++) {
-              const action = pick(rng, ['resolve', 'reject', 'gate', 'abort-obs']);
+              const action = pick(rng, [
+                'resolve',
+                'reject',
+                'gate',
+                'abort-obs',
+              ]);
               s.spawn(async (signal) => {
                 if (action === 'reject') throw new Error(`rej-${i}`);
                 if (action === 'gate') {
@@ -27,9 +32,15 @@ describe('randomized scope schedules', () => {
                   // settles (avoids the documented uncooperative-infinite hang)
                   await Promise.race([
                     new Promise<never>((_r, rej) =>
-                      signal.addEventListener('abort', () => rej(signal.reason), { once: true }),
+                      signal.addEventListener(
+                        'abort',
+                        () => rej(signal.reason),
+                        { once: true },
+                      ),
                     ),
-                    gates[randInt(rng, 0, gates.length - 1)].wait().then(() => 'a-ok' as const),
+                    gates[randInt(rng, 0, gates.length - 1)]
+                      .wait()
+                      .then(() => 'a-ok' as const),
                   ]);
                   return `a-${i}`;
                 }
@@ -45,7 +56,9 @@ describe('randomized scope schedules', () => {
           ctrl.abort(new Error('rand-abort'));
         }
         // release gates immediately via microtask (no timers)
-        queueMicrotask(() => gates.forEach((g) => g.open()));
+        queueMicrotask(() => {
+          for (const g of gates) g.open();
+        });
         try {
           await p;
         } catch {
@@ -62,20 +75,25 @@ describe('randomized scope schedules', () => {
 describe('randomized retry schedules', () => {
   it('100 seeds: retry never starts an attempt after abort', async () => {
     const failures = await runManyRandom(
-      async ({ rng, rec }) => {
+      async ({ rng }) => {
         const ctrl = new AbortController();
         let calls = 0;
         const p = retry(
-          async (signal) => {
+          async () => {
             calls++;
             if (rng() < 0.7) {
               // fail; possibly abort the parent mid-attempt
-              if (rng() < 0.3) setTimeout(() => ctrl.abort(new Error('mid-abort')), 0);
+              if (rng() < 0.3)
+                setTimeout(() => ctrl.abort(new Error('mid-abort')), 0);
               throw new Error(`fail-${calls}`);
             }
             return 'ok';
           },
-          { attempts: randInt(rng, 1, 8), delay: randInt(rng, 0, 5), signal: ctrl.signal },
+          {
+            attempts: randInt(rng, 1, 8),
+            delay: randInt(rng, 0, 5),
+            signal: ctrl.signal,
+          },
         );
         // randomly pre-abort
         if (rng() < 0.2) ctrl.abort(new Error('pre-abort'));
@@ -107,7 +125,8 @@ describe('randomized race schedules', () => {
           const kind = pick(rng, ['resolve', 'reject', 'slow']);
           workers.push(async () => {
             if (kind === 'reject') throw new Error(`rej-${i}`);
-            if (kind === 'slow') await new Promise((r) => setTimeout(r, randInt(rng, 1, 10)));
+            if (kind === 'slow')
+              await new Promise((r) => setTimeout(r, randInt(rng, 1, 10)));
             return i;
           });
         }

@@ -2,7 +2,7 @@
 // Seeded + deterministic given seed; records + can replay failing seeds.
 // Test-only machinery.
 
-import { mulberry32, type Rng, deferred, recorder } from './adversarial.js';
+import { deferred, mulberry32, type Rng, recorder } from './adversarial.js';
 
 export type RandomSeed = number;
 
@@ -22,14 +22,12 @@ export interface RandomRunResult {
  */
 export async function runRandomScenario(
   seed: RandomSeed,
-  build: (
-    ctx: {
-      rng: Rng;
-      rec: { push: (e: string) => void };
-      deferred: typeof deferred;
-      events: string[];
-    },
-  ) => Promise<void>,
+  build: (ctx: {
+    rng: Rng;
+    rec: { push: (e: string) => void };
+    deferred: typeof deferred;
+    events: string[];
+  }) => Promise<void>,
   opts: { timeoutMs?: number } = {},
 ): Promise<RandomRunResult> {
   const rng = mulberry32(seed);
@@ -48,7 +46,10 @@ export async function runRandomScenario(
     const result = await Promise.race([
       done,
       new Promise<never>((_, rej) =>
-        setTimeout(() => rej(new Error(`scenario timeout (seed ${seed})`)), timeoutMs),
+        setTimeout(
+          () => rej(new Error(`scenario timeout (seed ${seed})`)),
+          timeoutMs,
+        ),
       ),
     ]);
     await result;

@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { retry } from '../src/retry.js';
-import { deferred, trackUnhandledRejections, tick } from './helpers/adversarial.js';
+import {
+  deferred,
+  tick,
+  trackUnhandledRejections,
+} from './helpers/adversarial.js';
 
 describe('retry: abort boundaries', () => {
   it('parent aborts before next loop check → no new attempt', async () => {
@@ -8,7 +12,7 @@ describe('retry: abort boundaries', () => {
     let calls = 0;
     // first attempt fails; abort fires before the loop checks again
     const p = retry(
-      async (signal) => {
+      async () => {
         calls++;
         if (calls === 1) {
           // schedule abort to fire during the failure propagation
@@ -91,7 +95,8 @@ describe('retry: abort boundaries', () => {
     let calls = 0;
     const r = await retry(async () => {
       calls++;
-      if (calls === 1) throw new DOMException('Timeout exceeded', 'TimeoutError');
+      if (calls === 1)
+        throw new DOMException('Timeout exceeded', 'TimeoutError');
       return 'ok';
     });
     expect(calls).toBe(2);
@@ -189,6 +194,8 @@ describe('retry: timer cleanup', () => {
     await new Promise((r) => setTimeout(r, 2));
     ctrl.abort(new Error('stop'));
     await expect(p).rejects.toThrow('stop');
+    // abort stopped retry before any further attempt
+    expect(calls).toBe(1);
   });
 
   it('many abort-during-delay cycles complete promptly (timer retention)', async () => {
