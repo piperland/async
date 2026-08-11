@@ -46,7 +46,12 @@ export function retry<T>(
         throw signal.reason;
       }
       const attemptController = new AbortController();
-      const attemptSignal = AbortSignal.any([signal, attemptController.signal]);
+      // Only compose via AbortSignal.any when there is a parent signal.
+      // AbortSignal.any([singleSignal]) retains the source signal's listener
+      // (native behavior) and would leak on hot retry paths.
+      const attemptSignal = options.signal
+        ? AbortSignal.any([signal, attemptController.signal])
+        : attemptController.signal;
 
       try {
         return await worker(attemptSignal);
