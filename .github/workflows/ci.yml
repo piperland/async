@@ -1,0 +1,80 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: test (node current)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+
+  runtime-parity:
+    name: runtime parity (node 20 / bun / deno)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # Node current
+      - name: parity (node 24)
+        run: node test/runtime-parity.mjs
+
+      # Node runtime floor (20.x) — build was done under Node 24 (dev floor);
+      # the built ESM output is executed under the runtime floor.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: parity (node 20)
+        run: node test/runtime-parity.mjs
+
+      # Bun
+      - uses: oven-sh/setup-bun@v2
+      - name: parity (bun)
+        run: bun test/runtime-parity.mjs
+
+      # Deno
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: parity (deno)
+        run: deno run --allow-read --allow-env --allow-sys test/runtime-parity.mjs
+
+  package:
+    name: package check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm pack --dry-run
