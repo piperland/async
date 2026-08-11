@@ -1,0 +1,38 @@
+{
+  "name": "@piperland/async",
+  "version": "0.0.0",
+  "description": "Async control for JavaScript and TypeScript.",
+  "type": "module",
+  "sideEffects": false,
+  "license": "UNLICENSED",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.3"
+  },
+  "packageManager": "pnpm@11.20.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check src test",
+    "lint:fix": "biome check --write src test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.8",
+    "@types/node": "26.2.0",
+    "expect-type": "^1.4.0",
+    "tinybench": "^4.1.0",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}
