@@ -80,7 +80,7 @@ jobs:
       - run: pnpm pack --dry-run
 
   browser:
-    name: browser semantic (chromium)
+    name: browser semantic (chromium/firefox/webkit)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,8 +93,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: node test/browser/run-browser-test.mjs
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - run: node test/browser/run-browser-test.mjs all
 
   bench-smoke:
     name: benchmark smoke

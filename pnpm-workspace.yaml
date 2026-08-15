@@ -1,1 +1,3 @@
+allowBuilds:
+  workerd: false
 minimumReleaseAge: 0
