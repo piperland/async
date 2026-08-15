@@ -1,0 +1,43 @@
+---
+name: Bug report
+description: Report a bug in Piper Async
+title: '[bug] '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve Piper Async's beta. Keep it minimal.
+  - type: input
+    id: version
+    attributes:
+      label: Piper Async version
+      description: e.g. 0.1.0-beta.0
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime and version
+      description: e.g. Node 22.6, Bun 1.3, Deno 2.9, Chromium 128, Cloudflare Workers
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Smallest code that reproduces the issue (no framework needed).
+      render: js
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true

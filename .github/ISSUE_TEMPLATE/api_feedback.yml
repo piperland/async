@@ -1,0 +1,23 @@
+---
+name: API feedback
+description: Feedback on the Piper Async API during beta
+title: '[feedback] '
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: Beta feedback on the API. The 0.1.x beta API may change before 1.0.
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Feedback
+      description: What works, what is awkward, what is missing? Concrete use cases help most.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Piper Async version
+      description: e.g. 0.1.0-beta.0
+    validations:
+      required: true
