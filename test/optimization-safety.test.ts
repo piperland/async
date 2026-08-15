@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { race, retry } from '../src/index.js';
-import { tick } from './helpers/adversarial.js';
+import { deferred, tick } from './helpers/adversarial.js';
 
 // Regression tests for the Run-010 optimizations' semantic safety:
 //  1. race shared cancellation reason must be immutable (no cross-call mutation).
@@ -78,21 +78,28 @@ describe('retry: shared signal safety', () => {
     // With a shared signal, listeners registered during prior attempts fire when
     // the parent eventually aborts. This matches the per-attempt baseline
     // (AbortSignal.any fan-out) and is released when the call ends — memory flat.
+    // Deterministic: attempt 1 fails and resolves a deferred that the abort is
+    // wired to; the abort lands while a later attempt is in-flight.
     const ctrl = new AbortController();
+    const abortAfterFirstFail = deferred<void>();
     let fired = 0;
     let attempt = 0;
     await retry(
       async (signal) => {
         attempt++;
         signal.addEventListener('abort', () => fired++, { once: true });
-        if (attempt === 1) setTimeout(() => ctrl.abort(new Error('stop')), 5);
-        await new Promise((r) => setTimeout(r, 1));
+        if (attempt === 1) {
+          // signal that attempt 1 has failed; abort lands during attempt 2
+          queueMicrotask(() => abortAfterFirstFail.resolve());
+        }
+        await abortAfterFirstFail.promise.then(() => ctrl.abort(new Error('stop')));
         throw new Error('fail');
       },
       { attempts: 5, signal: ctrl.signal },
     ).catch(() => {});
-    // attempt 1 + attempt 2 (in-flight when abort landed) listeners fired
+    // Attempt 1's listener (registered) fires when the abort lands mid-attempt-2.
     expect(fired).toBeGreaterThanOrEqual(1);
+    // The abort stopped retrying before all 5 attempts ran.
     expect(attempt).toBeLessThan(5);
   });
 
