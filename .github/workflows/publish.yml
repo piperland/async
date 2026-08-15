@@ -1,16 +1,24 @@
 # Piper Async — npm release workflow (trusted publishing).
-# Manual trigger ONLY. Does NOT publish automatically.
-# After the package exists on npm (bootstrapped via the first manual publish),
-# configure this workflow as the npm Trusted Publisher for @piperland/async
-# (provider: GitHub Actions; workflow: publish.yml).
+# Manual trigger ONLY. Prerelease-only for the beta phase.
 #
 # Security model:
-#   - GitHub Actions OIDC + npm Trusted Publishing. NO long-lived npm token,
-#     NO npm token in GitHub Secrets.
-#   - setup-node with registry-url generates the auth token from the OIDC
-#     identity (id-token: write). npm publish then authenticates via that
+#   - GitHub Actions OIDC + npm Trusted Publishing (`npm trust github`).
+#     NO long-lived npm token, NO NODE_AUTH_TOKEN / NPM_TOKEN secret.
+#   - setup-node with registry-url generates the publish token from the OIDC
+#     identity (id-token: write). npm publish authenticates via that
 #     short-lived token.
-#   - Explicit workflow_dispatch — no auto-publish from normal commits.
+#   - Filename `publish.yml` is a TRUST INVARIANT: the npm trusted-publisher
+#     config is bound to this exact filename. Do not rename the workflow
+#     without reconfiguring npm trust.
+#   - No package-manager caching in the release job (release security > speed).
+#
+# Guards (all enforced by scripts/release-guard.mjs, tested in
+# test/release-guard.test.ts):
+#   - existing-version guard: refuses to publish a version already on npm
+#     (versions are immutable).
+#   - stable-version guard: refuses non-prerelease versions (beta phase).
+#   - prerelease-tag guard: any prerelease publishes with --tag beta, never latest.
+#   - source check: refuses a run from any repository other than piperland/async.
 
 name: publish
 
@@ -20,11 +28,6 @@ on:
       version:
         description: 'Version to publish (e.g. 0.1.0-beta.1)'
         required: true
-        type: string
-      distTag:
-        description: 'npm dist-tag (default: beta)'
-        required: false
-        default: 'beta'
         type: string
 
 permissions:
@@ -40,14 +43,20 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
+          package-manager-cache: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           registry-url: 'https://registry.npmjs.org/'
       - name: Install
         run: pnpm install --frozen-lockfile
-      - name: Validate version matches input
-        run: node -e "const p=require('./package.json'); if (p.version !== '${{ inputs.version }}') { console.error('package.json version', p.version, '!= input', '${{ inputs.version }}'); process.exit(1); }"
+      - name: Validate package source
+        run: |
+          node -e "const p = require('./package.json');
+            if (p.name !== '@piperland/async') throw new Error('unexpected name: ' + p.name);
+            if (p.version !== '${{ inputs.version }}') { console.error('package.json version', p.version, '!= input', '${{ inputs.version }}'); process.exit(1); }"
+      - name: Release guards
+        run: node scripts/release-guard.mjs "${{ inputs.version }}" "${{ github.repository }}"
       - name: Typecheck
         run: pnpm typecheck
       - name: Lint
@@ -56,8 +65,11 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      - name: Inspect pack
+        run: pnpm pack --dry-run
       # Trusted publishing: setup-node sets NODE_AUTH_TOKEN from OIDC (no secret).
+      # Prerelease => beta tag (never latest) per beta-phase policy.
       - name: Publish
-        run: pnpm publish --access public --tag "${{ inputs.distTag }}" --no-git-checks
-      - name: Verify dist-tag
+        run: pnpm publish --access public --tag beta --no-git-checks
+      - name: Verify dist-tags
         run: npm view @piperland/async dist-tags --json
