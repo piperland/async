@@ -116,8 +116,12 @@ export function race<T>(
   });
 }
 
-// Shared reason for loser cancellation. Immutable DOMException; identity is not
-// part of the race contract (losers observe name/message). Creating a fresh
-// DOMException per race was the dominant allocation on the race hot path
-// (profile: 37% of samples).
-const LOST_RACE_REASON = new DOMException('Lost race', 'AbortError');
+// Shared reason for loser cancellation. Frozen so no consumer can mutate it
+// across race calls (a DOMException is extensible by default; mutating the
+// shared instance would leak into unrelated races). Identity is not part of the
+// race contract (losers observe name/message/type), which is why a shared
+// immutable sentinel is safe. Creating a fresh DOMException per race was the
+// dominant allocation on the race hot path (profile: 37% of samples).
+const LOST_RACE_REASON = Object.freeze(
+  new DOMException('Lost race', 'AbortError'),
+);
