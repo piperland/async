@@ -92,7 +92,9 @@ describe('retry: shared signal safety', () => {
           // signal that attempt 1 has failed; abort lands during attempt 2
           queueMicrotask(() => abortAfterFirstFail.resolve());
         }
-        await abortAfterFirstFail.promise.then(() => ctrl.abort(new Error('stop')));
+        await abortAfterFirstFail.promise.then(() =>
+          ctrl.abort(new Error('stop')),
+        );
         throw new Error('fail');
       },
       { attempts: 5, signal: ctrl.signal },
