@@ -1,11 +1,18 @@
 {
   "name": "@piperland/async",
-  "version": "0.0.0",
+  "version": "0.1.0-beta.0",
   "description": "Async control for JavaScript and TypeScript.",
   "type": "module",
   "sideEffects": false,
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "keywords": [
+    "async",
+    "concurrency",
+    "structured-concurrency",
+    "abortsignal",
+    "retry",
+    "timeout"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/piperland/async.git"
@@ -21,7 +28,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20.3"
@@ -40,7 +48,8 @@
     "bench:timeout": "node bench/timeout.bench.mjs",
     "bench:race": "node bench/race.bench.mjs",
     "bench:scope": "node bench/scope.bench.mjs",
-    "test:browser": "node test/browser/run-browser-test.mjs"
+    "test:browser": "node test/browser/run-browser-test.mjs",
+    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.8",

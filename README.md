@@ -7,10 +7,12 @@ using standard JavaScript primitives. It is not a replacement for `async`/`await
 `Promise` — it gives you ownership, cancellation, and cleanup over the async work those
 primitives start.
 
+> **Beta.** This is a prerelease. The API may evolve before 1.0.
+
 ## Install
 
 ```sh
-npm install @piperland/async
+npm install @piperland/async@beta
 ```
 
 Requires Node >= 20.3, modern evergreen browsers, Bun, or Deno. Zero runtime dependencies.
@@ -117,4 +119,4 @@ functions are accepted (the signal is passed but may be ignored).
 
 ## License
 
-To be decided. This package is not yet published; it is under active development.
+MIT.
