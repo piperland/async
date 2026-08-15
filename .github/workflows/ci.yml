@@ -117,3 +117,19 @@ jobs:
       - run: node bench/timeout.bench.mjs > /tmp/bench-timeout.log && grep -q "ops/s" /tmp/bench-timeout.log
       - run: node bench/race.bench.mjs > /tmp/bench-race.log && grep -q "ops/s" /tmp/bench-race.log
       - run: node bench/scope.bench.mjs > /tmp/bench-scope.log && grep -q "ops/s" /tmp/bench-scope.log
+
+  workers:
+    name: cloudflare workers runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm exec vitest run --config test/workers/vitest.workers.config.mts
