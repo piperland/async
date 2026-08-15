@@ -18,7 +18,24 @@ interface RaceOptions {
  *
  * An empty iterable rejects immediately with a clear Error (rather than
  * `Promise.race([])` hanging forever).
+ *
+ * Overload 1 (tuple): heterogeneous workers infer the UNION of their result
+ * types (e.g. `race([() => 'a', () => 1])` → `Promise<string | number>`),
+ * matching `Promise.race`'s inference for heterogeneous inputs.
  */
+export function race<const T extends readonly unknown[]>(
+  workers: { [K in keyof T]: (signal: AbortSignal) => Awaitable<T[K]> },
+  options?: RaceOptions,
+): Promise<T[number]>;
+
+/**
+ * Overload 2 (iterable): homogeneous workers via a single result type.
+ */
+export function race<T>(
+  workers: Iterable<(signal: AbortSignal) => Awaitable<T>>,
+  options?: RaceOptions,
+): Promise<T>;
+
 export function race<T>(
   workers: Iterable<(signal: AbortSignal) => Awaitable<T>>,
   options: RaceOptions = {},
