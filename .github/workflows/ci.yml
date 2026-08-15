@@ -14,7 +14,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -32,7 +32,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -45,7 +45,7 @@ jobs:
 
       # Node runtime floor (20.x) — build was done under Node 24 (dev floor);
       # the built ESM output is executed under the runtime floor.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
       - name: parity (node 20)
@@ -71,7 +71,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -87,7 +87,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -104,7 +104,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -126,7 +126,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
