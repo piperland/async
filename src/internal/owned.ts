@@ -56,15 +56,19 @@ export function createOwned(
   signal: AbortSignal,
   onChildFailure: (error: unknown) => void,
 ): OwnedTracker {
-  const pending = new Set<Promise<unknown>>();
+  // Lazy child registry: allocate the Set only on first track(). Most scopes /
+  // single-worker primitives never track more than a handful of children, and
+  // some track none — the eager Set was a fixed allocation on every entry.
+  let pending: Set<Promise<unknown>> | undefined;
   let failure: unknown;
 
   function track(promise: Promise<unknown>): void {
+    if (pending === undefined) pending = new Set();
     pending.add(promise);
     promise.then(
-      () => pending.delete(promise),
+      () => pending?.delete(promise),
       (error) => {
-        pending.delete(promise);
+        pending?.delete(promise);
         // A rejection after the signal aborted is a teardown casualty.
         if (failure === undefined && !signal.aborted) {
           failure = error;
@@ -84,6 +88,7 @@ export function createOwned(
   }
 
   async function settle(): Promise<void> {
+    if (pending === undefined) return;
     while (pending.size > 0) {
       await Promise.allSettled([...pending]);
     }
