@@ -2,8 +2,8 @@
 // Runs test/workers/workers-semantic.test.ts inside a real workerd runtime.
 // This is the official Cloudflare Vitest integration, not raw Miniflare.
 
-import { defineConfig } from 'vitest/config';
 import { cloudflarePool } from '@cloudflare/vitest-pool-workers';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {

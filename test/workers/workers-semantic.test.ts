@@ -48,7 +48,9 @@ describe('piper in cloudflare workers (workerd)', () => {
   it('timeout rejects with TimeoutError', async () => {
     const err = await timeout(async (signal) => {
       await new Promise((_r, rej) => {
-        signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+        signal.addEventListener('abort', () => rej(signal.reason), {
+          once: true,
+        });
       });
       return 'never';
     }, 10).then(
@@ -100,7 +102,9 @@ describe('piper in cloudflare workers (workerd)', () => {
       async (signal) => {
         try {
           await new Promise((_r, rej) => {
-            signal.addEventListener('abort', () => rej(signal.reason), { once: true });
+            signal.addEventListener('abort', () => rej(signal.reason), {
+              once: true,
+            });
           });
           return 'loser';
         } catch {
