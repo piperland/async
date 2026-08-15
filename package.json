@@ -25,7 +25,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "biome check src test",
-    "lint:fix": "biome check --write src test"
+    "lint:fix": "biome check --write src test",
+    "bench": "node bench/map.bench.mjs && node bench/retry.bench.mjs && node bench/timeout.bench.mjs && node bench/race.bench.mjs && node bench/scope.bench.mjs",
+    "bench:map": "node bench/map.bench.mjs",
+    "bench:retry": "node bench/retry.bench.mjs",
+    "bench:timeout": "node bench/timeout.bench.mjs",
+    "bench:race": "node bench/race.bench.mjs",
+    "bench:scope": "node bench/scope.bench.mjs",
+    "test:browser": "node test/browser/run-browser-test.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.8",

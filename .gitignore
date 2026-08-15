@@ -1,3 +1,5 @@
 .agent/
 node_modules/
 dist/
+bench/raw/
+
