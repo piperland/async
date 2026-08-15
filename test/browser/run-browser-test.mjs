@@ -5,8 +5,8 @@
 // Serves the repo root over local HTTP (ES modules need http), loads an HTML
 // page that imports the browser-semantic module, and reports the results.
 
-import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { extname, join, resolve } from 'node:path';
 import { chromium } from 'playwright';
 
@@ -23,8 +23,13 @@ const MIME = {
 function serve() {
   return createServer(async (req, res) => {
     try {
-      const urlPath = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-      const filePath = join(ROOT, urlPath === '/' ? 'test/browser/index.html' : urlPath);
+      const urlPath = decodeURIComponent(
+        new URL(req.url, 'http://localhost').pathname,
+      );
+      const filePath = join(
+        ROOT,
+        urlPath === '/' ? 'test/browser/index.html' : urlPath,
+      );
       const data = await readFile(filePath);
       res.writeHead(200, {
         'Content-Type': MIME[extname(filePath)] ?? 'application/octet-stream',
@@ -52,10 +57,14 @@ try {
       const parsed = JSON.parse(text.slice('BROWSER-SEMANTIC-RESULTS '.length));
       let failed = 0;
       for (const r of parsed.results) {
-        console.log(`  ${r.ok ? 'ok' : 'FAIL'}: ${r.name}${r.extra ? ` (${r.extra})` : ''}`);
+        console.log(
+          `  ${r.ok ? 'ok' : 'FAIL'}: ${r.name}${r.extra ? ` (${r.extra})` : ''}`,
+        );
         if (!r.ok) failed++;
       }
-      console.log(`browser-semantic: ${parsed.results.length - failed} passed, ${failed} failed`);
+      console.log(
+        `browser-semantic: ${parsed.results.length - failed} passed, ${failed} failed`,
+      );
       process.exitCode = failed > 0 ? 1 : 0;
     }
   });
@@ -65,11 +74,19 @@ try {
   });
   await page.goto(url, { waitUntil: 'networkidle' });
   // give the module time to run and report
-  await page.waitForFunction(() => {
-    return document.body?.dataset?.done === 'true' || document.body?.dataset?.failed === 'true';
-  }, { timeout: 30_000 }).catch(() => {
-    // page may have closed
-  });
+  await page
+    .waitForFunction(
+      () => {
+        return (
+          document.body?.dataset?.done === 'true' ||
+          document.body?.dataset?.failed === 'true'
+        );
+      },
+      { timeout: 30_000 },
+    )
+    .catch(() => {
+      // page may have closed
+    });
   await new Promise((r) => setTimeout(r, 500));
 } finally {
   await browser.close();
