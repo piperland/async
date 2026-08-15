@@ -49,10 +49,12 @@
     "bench:race": "node bench/race.bench.mjs",
     "bench:scope": "node bench/scope.bench.mjs",
     "test:browser": "node test/browser/run-browser-test.mjs",
-    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "test:workers": "vitest run --config test/workers/vitest.workers.config.mts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.8",
+    "@cloudflare/vitest-pool-workers": "0.21.3",
     "@types/node": "26.2.0",
     "expect-type": "^1.4.0",
     "p-limit": "7.3.1",

@@ -1,3 +1,4 @@
 allowBuilds:
-  workerd: false
+  esbuild: true
+  workerd: true
 minimumReleaseAge: 0
