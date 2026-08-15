@@ -10,7 +10,7 @@ jobs:
     name: test (node current)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
@@ -28,7 +28,7 @@ jobs:
     name: runtime parity (node 20 / bun / deno)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
@@ -67,7 +67,7 @@ jobs:
     name: package check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
@@ -83,7 +83,7 @@ jobs:
     name: browser semantic (chromium/firefox/webkit)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
@@ -100,7 +100,7 @@ jobs:
     name: benchmark smoke
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
@@ -122,7 +122,7 @@ jobs:
     name: cloudflare workers runtime
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 11.20.0
