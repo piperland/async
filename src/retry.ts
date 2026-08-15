@@ -40,18 +40,19 @@ export function retry<T>(
 
   const { signal } = composeSignal(options.signal);
 
+  // The worker receives the SAME composed signal across all attempts.
+  // v0.1 retry has no per-attempt timeout or manual attempt cancellation, so an
+  // attempt-specific AbortController provides no semantic value. Reusing one
+  // signal per retry call eliminates N-1 AbortController + AbortSignal.any
+  // allocations (the dominant retry fixed cost). Parent abort still propagates
+  // via `signal`; the `signal.aborted` check below prevents post-abort attempts.
+  const attemptSignal = signal;
+
   return (async () => {
     for (let attempt = 1; attempt <= attempts; attempt++) {
       if (signal.aborted) {
         throw signal.reason;
       }
-      const attemptController = new AbortController();
-      // Only compose via AbortSignal.any when there is a parent signal.
-      // AbortSignal.any([singleSignal]) retains the source signal's listener
-      // (native behavior) and would leak on hot retry paths.
-      const attemptSignal = options.signal
-        ? AbortSignal.any([signal, attemptController.signal])
-        : attemptController.signal;
 
       try {
         return await worker(attemptSignal);
