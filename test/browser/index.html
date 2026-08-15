@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Piper Async browser semantic validation</title>
+  </head>
+  <body>
+    <pre id="log"></pre>
+    <script type="module">
+      import { main } from './browser-semantic.mjs';
+
+      try {
+        const { ok } = await main();
+        document.body.dataset.done = 'true';
+        document.body.dataset.failed = ok ? 'false' : 'true';
+      } catch (err) {
+        console.error('browser semantic module failed:', err);
+        document.body.dataset.done = 'true';
+        document.body.dataset.failed = 'true';
+      }
+    </script>
+  </body>
+</html>

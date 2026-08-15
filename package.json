@@ -31,6 +31,11 @@
     "@biomejs/biome": "2.5.8",
     "@types/node": "26.2.0",
     "expect-type": "^1.4.0",
+    "p-limit": "7.3.1",
+    "p-map": "7.0.6",
+    "p-retry": "8.0.0",
+    "p-timeout": "7.0.1",
+    "playwright": "1.62.1",
     "tinybench": "^4.1.0",
     "typescript": "7.0.2",
     "vitest": "4.1.10"
