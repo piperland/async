@@ -6,6 +6,14 @@
   "sideEffects": false,
   "license": "UNLICENSED",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/piperland/async.git"
+  },
+  "homepage": "https://github.com/piperland/async",
+  "bugs": {
+    "url": "https://github.com/piperland/async/issues"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
