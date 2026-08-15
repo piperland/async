@@ -7,15 +7,34 @@ using standard JavaScript primitives. It is not a replacement for `async`/`await
 `Promise` — it gives you ownership, cancellation, and cleanup over the async work those
 primitives start.
 
-> **Beta.** This is a prerelease. The API may evolve before 1.0.
+> **Beta.** This is a prerelease. The API may evolve before 1.0. The core semantics are
+> stable, but names and options can change during beta. Please report friction through
+> [Issues](https://github.com/piperland/async/issues) (bug reports or API feedback).
 
 ## Install
 
 ```sh
 npm install @piperland/async@beta
+# or: pnpm add @piperland/async@beta · bun add @piperland/async@beta
 ```
 
-Requires Node >= 20.3, modern evergreen browsers, Bun, or Deno. Zero runtime dependencies.
+> The package is in beta and publishes under the `beta` npm tag, so the install command
+> above pins it. If you install with no tag, npm's `latest` currently points at this beta;
+> that will change when a stable release lands.
+
+Zero runtime dependencies.
+
+## Supported runtimes
+
+Validated against the live package in:
+
+| Runtime | Notes |
+| --- | --- |
+| Node.js | `>= 20.3` |
+| Bun | current (1.x) |
+| Deno | via `npm:` specifier |
+| Browsers | evergreen (Chromium / Firefox / WebKit) |
+| Cloudflare Workers | validated in `workerd` |
 
 ## The five primitives
 
