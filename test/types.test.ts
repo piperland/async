@@ -1,7 +1,7 @@
 import { expectTypeOf } from 'expect-type';
 import { describe, it } from 'vitest';
 import type { Scope } from '../src/index.js';
-import { map, race, retry, scope, timeout } from '../src/index.js';
+import { any, map, race, retry, scope, timeout } from '../src/index.js';
 
 // These tests only type-check; expectTypeOf asserts exact inferred types.
 describe('type system', () => {
@@ -71,6 +71,26 @@ describe('type system', () => {
   it('race infers union of worker results', async () => {
     const r = await race([async () => 'a', async () => 1]);
     expectTypeOf(r).toEqualTypeOf<Promise<string | number>>();
+  });
+
+  it('any infers union of worker results (heterogeneous tuple)', async () => {
+    const r = await any([() => 'a', () => 1, () => true]);
+    expectTypeOf(r).toEqualTypeOf<Promise<string | number | boolean>>();
+  });
+
+  it('any works with readonly tuples', async () => {
+    const workers = [async () => 'a', async () => 1] as const;
+    const r = await any(workers);
+    expectTypeOf(r).toEqualTypeOf<Promise<'a' | 1>>();
+  });
+
+  it('any works with homogeneous arrays', async () => {
+    const workers: Array<() => Promise<string>> = [
+      async () => 'a',
+      async () => 'b',
+    ];
+    const r = await any(workers);
+    expectTypeOf(r).toEqualTypeOf<Promise<string>>();
   });
 
   // These verify compile-time rejection WITHOUT running the eager-promise code:
