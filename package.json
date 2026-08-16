@@ -51,6 +51,7 @@
     "test:browser": "node test/browser/run-browser-test.mjs",
     "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "test:workers": "vitest run --config test/workers/vitest.workers.config.mts",
+    "test:examples": "node scripts/examples-smoke.mjs",
     "release:check": "corepack pnpm typecheck && corepack pnpm lint && corepack pnpm test && corepack pnpm build && corepack pnpm pack --dry-run && node scripts/release-guard.mjs --no-registry"
   },
   "devDependencies": {

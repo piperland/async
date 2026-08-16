@@ -110,6 +110,30 @@ await map(ids, (id, i, signal) => fetch(`/user/${id}?n=${i}`, { signal }), { con
 - Preserves input order in results (completion order may differ).
 - On failure or cancellation, stops pulling and awaits started workers' teardown.
 
+## Examples
+
+Run these against the installed package (`node examples/<name>.mjs`). Each is
+self-contained and shows a realistic composition.
+
+- `http-fanout.mjs` — bounded-concurrency fan-out of HTTP requests with per-request
+  timeout, ordered results, and fail-fast cancellation (`map` + `timeout`).
+- `structured-request.mjs` — one request assembled from parallel dependencies with
+  sibling cancellation and cleanup on failure (`scope`).
+- `retry-with-timeout.mjs` — flaky operation retried with a per-attempt timeout and
+  parent-signal cancellation (`retry` + `timeout`).
+- `async-iterable.mjs` — bounded-concurrency processing of an async iterable with lazy
+  pulling and ordered results (`map`).
+
+A canonical composition that appears throughout:
+
+```js
+// up to N attempts, each bounded by a per-attempt deadline, all cancellable
+const value = await retry(
+  (signal) => timeout((attemptSignal) => doWork(attemptSignal), 500, { signal }),
+  { attempts: 3, signal: parentSignal },
+);
+```
+
 ## Ownership and cancellation
 
 Every Piper primitive owns the async work it directly starts until that primitive settles,

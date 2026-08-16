@@ -23,6 +23,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm test:examples
 
   runtime-parity:
     name: runtime parity (node 20 / bun / deno)
