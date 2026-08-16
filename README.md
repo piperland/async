@@ -36,11 +36,16 @@ Validated against the live package in:
 | Browsers | evergreen (Chromium / Firefox / WebKit) |
 | Cloudflare Workers | validated in `workerd` |
 
-## The five primitives
+## The six primitives
 
 ```js
-import { scope, retry, timeout, race, map } from '@piperland/async';
+import { scope, any, retry, timeout, race, map } from '@piperland/async';
 ```
+
+> **Cancellation is cooperative.** Piper gives each worker an `AbortSignal`. To actually
+> stop work, pass that signal into the async operation that should stop — e.g.
+> `fetch(url, { signal })`. Piper requests cancellation and awaits teardown; it cannot
+> forcibly terminate arbitrary JavaScript that ignores its signal.
 
 ### `scope(callback, { signal })`
 
@@ -49,8 +54,8 @@ owned children that can never outlive the scope.
 
 ```js
 await scope(async (s) => {
-  const a = s.spawn(() => fetch('/a'));
-  const b = s.spawn(() => fetch('/b'));
+  const a = s.spawn((signal) => fetch('/a', { signal }));
+  const b = s.spawn((signal) => fetch('/b', { signal }));
   return combine(await a, await b); // scope waits for both
 });
 ```
@@ -63,8 +68,8 @@ await scope(async (s) => {
 
 ### `retry(worker, { attempts, delay, signal })`
 
-Re-runs a worker until it succeeds or `attempts` (default 3, including the first) is
-exhausted.
+Re-runs a worker until it succeeds or `attempts` (default 3, **including the first**) is
+exhausted. `attempts: 3` means at most 3 total attempts (2 retries).
 
 ```js
 await retry(() => fetch('/flaky'), { attempts: 3 });
@@ -78,9 +83,10 @@ await retry((signal) => fetch('/flaky', { signal }), { attempts: 3, delay: 100 }
 
 ### `timeout(worker, milliseconds, { signal })`
 
-**Strong timeout**: on deadline it requests cancellation, awaits the worker's teardown,
-then rejects with a `TimeoutError`. This differs from a raw `Promise.race`-style timeout —
-if the worker ignores cancellation, `timeout()` waits for it to settle before rejecting.
+**Strong timeout** — `timeout()`, `race()`, and `any()` all use strong teardown: they
+request cancellation, then **await owned work to settle before returning**. An uncooperative
+worker (one that ignores its signal) can therefore delay settlement. This is the price of
+not leaving work behind.
 
 ```js
 await timeout((signal) => fetch('/slow', { signal }), 1000);
@@ -88,13 +94,33 @@ await timeout((signal) => fetch('/slow', { signal }), 1000);
 
 ### `race(workers, { signal })`
 
-**Strong race**: the first settled competitor determines the result; losers are cancelled
-and **awaited to teardown before `race()` settles**. This differs from `Promise.race()`,
-which returns immediately and lets losers keep running.
+**Strong race — first SETTLED.** The first settled competitor determines the result; losers
+are cancelled and **awaited to teardown before `race()` settles**. This differs from
+`Promise.race()`, which returns immediately and lets losers keep running.
 
 ```js
 await race([() => providerA(), () => providerB()]);
 ```
+
+### `any(workers, { signal })`
+
+**Strong first-SUCCESS.** The first *successful* competitor determines the result; a
+rejection does **not** end `any()` while another candidate may still succeed. Losers are
+cancelled and awaited to teardown before `any()` settles. If every worker rejects, `any()`
+rejects with an `AggregateError` (reasons in input order), like `Promise.any([])`.
+
+```js
+// try the primary; if it fails, use the first replica that succeeds
+await any([
+  (signal) => fetch(primary, { signal }),
+  (signal) => fetch(replicaA, { signal }),
+  (signal) => fetch(replicaB, { signal }),
+]);
+```
+
+> **race() vs any():** `race()` = first **settled** (first outcome, success *or* failure).
+> `any()` = first **successful** (keeps trying past failures). Both cancel remaining workers
+> and await teardown after a winner is selected.
 
 ### `map(iterable, mapper, { concurrency, signal })`
 
@@ -123,6 +149,8 @@ self-contained and shows a realistic composition.
   parent-signal cancellation (`retry` + `timeout`).
 - `async-iterable.mjs` — bounded-concurrency processing of an async iterable with lazy
   pulling and ordered results (`map`).
+- `provider-failover.mjs` — primary fails quickly, a replica succeeds, the slow loser is
+  cancelled — first success wins (`any`).
 
 A canonical composition that appears throughout:
 

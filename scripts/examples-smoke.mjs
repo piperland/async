@@ -6,7 +6,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const examples = ['http-fanout', 'structured-request', 'retry-with-timeout', 'async-iterable'];
+const examples = [
+  'http-fanout',
+  'structured-request',
+  'retry-with-timeout',
+  'async-iterable',
+  'provider-failover',
+];
 let failed = false;
 for (const name of examples) {
   const file = join(root, 'examples', `${name}.mjs`);
