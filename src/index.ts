@@ -1,3 +1,4 @@
+export { any } from './any.js';
 export { map } from './map.js';
 export { race } from './race.js';
 export { retry } from './retry.js';
