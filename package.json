@@ -1,6 +1,6 @@
 {
   "name": "@piperland/async",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Async control for JavaScript and TypeScript.",
   "type": "module",
   "sideEffects": false,
