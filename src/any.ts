@@ -79,21 +79,35 @@ export function any<T>(
     return Promise.reject(new AggregateError([], ALL_FAILED_MESSAGE));
   }
 
+  // Validate every worker BEFORE starting any. A malformed entry (eager Promise,
+  // null, number, object, ...) is programmer error — it must become an
+  // authoritative TypeError that a legitimate success can NEVER mask. Because
+  // the iterable was materialized eagerly, validation happens before any worker
+  // function runs, so no owned work starts on invalid input.
+  for (let i = 0; i < workerFns.length; i++) {
+    const entry: unknown = workerFns[i];
+    if (typeof entry !== 'function') {
+      // If it is an already-started (eager) rejected Promise, observe its
+      // rejection so it does not surface as an unhandled rejection.
+      if (
+        entry != null &&
+        typeof (entry as PromiseLike<unknown>).then === 'function'
+      ) {
+        Promise.resolve(entry as PromiseLike<unknown>).catch(() => {});
+      }
+      return Promise.reject(new TypeError(INVALID_WORKER_MESSAGE));
+    }
+  }
+
   const workerCount = workerFns.length;
-  // Fixed-size, filled by INPUT index so the all-fail AggregateError is in a
-  // deterministic input order (native Promise.any uses rejection-time order;
-  // input order is more predictable for a control layer — see DECISIONS).
+  // Fixed-size, filled by INPUT index so the all-fail AggregateError preserves
+  // reasons in INPUT ORDER — exactly aligned with native Promise.any (ECMAScript
+  // assigns each candidate an input index and writes its reason into
+  // errors[index], regardless of rejection timing).
   const errors: unknown[] = new Array(workerCount);
   let rejectedCount = 0;
 
   const candidatePromises = workerFns.map((fn) => {
-    if (typeof fn !== 'function') {
-      // Misconfiguration (e.g. an eager Promise): surface it clearly rather than
-      // silently treating it as a failed candidate (matches race's contract).
-      return Promise.reject(
-        new TypeError('fn is not a function'),
-      ) as Promise<T>;
-    }
     let promise: Promise<T>;
     try {
       promise = Promise.resolve(fn(candidateSignal)) as Promise<T>;
@@ -183,3 +197,8 @@ const LOST_SELECTION_REASON = Object.freeze(
 // Matches native Promise.any's message; the portable contract is the type and
 // `.errors`, not this host text.
 const ALL_FAILED_MESSAGE = 'All promises were rejected';
+
+// Clear message for a malformed worker entry. Piper takes lazy functions, not
+// already-started Promises or other values.
+const INVALID_WORKER_MESSAGE =
+  'Expected worker to be a function (got a non-function; eager Promises are not workers)';

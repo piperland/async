@@ -67,6 +67,24 @@ export function race<T>(
     return Promise.reject(new Error('race() requires at least one worker'));
   }
 
+  // Validate every worker BEFORE starting any. A malformed entry (eager Promise,
+  // null, number, object, ...) is programmer error — it must become an
+  // authoritative TypeError that a legitimate settlement can NEVER mask.
+  for (let i = 0; i < workerFns.length; i++) {
+    const entry: unknown = workerFns[i];
+    if (typeof entry !== 'function') {
+      // Observe an already-started (eager) rejected Promise so it does not
+      // surface as an unhandled rejection.
+      if (
+        entry != null &&
+        typeof (entry as PromiseLike<unknown>).then === 'function'
+      ) {
+        Promise.resolve(entry as PromiseLike<unknown>).catch(() => {});
+      }
+      return Promise.reject(new TypeError(INVALID_WORKER_MESSAGE));
+    }
+  }
+
   const competitorPromises = workerFns.map((fn) => {
     let promise: Promise<T>;
     try {
@@ -132,6 +150,11 @@ export function race<T>(
     first.then((result) => settle(result));
   });
 }
+
+// Clear message for a malformed worker entry. Piper takes lazy functions, not
+// already-started Promises or other values.
+const INVALID_WORKER_MESSAGE =
+  'Expected worker to be a function (got a non-function; eager Promises are not workers)';
 
 // Shared reason for loser cancellation. Frozen so no consumer can mutate it
 // across race calls (a DOMException is extensible by default; mutating the
