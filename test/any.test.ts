@@ -347,21 +347,90 @@ describe('any — hostile iterable & thenables', () => {
 });
 
 describe('any — worker input validation', () => {
-  it('an eager Promise is a misconfiguration: treated as a failed candidate', async () => {
-    // An eager Promise is not a worker; it becomes a failed candidate.
-    // If another worker succeeds, that success wins.
-    const r = await any([Promise.resolve('x') as never, async () => 'y']);
-    expect(r).toBe('y');
+  // A malformed worker entry (eager Promise, null, number, object, ...) is
+  // programmer error. It must become an authoritative TypeError that a
+  // legitimate success can NEVER mask.
+  const INVALID_MESSAGE =
+    'Expected worker to be a function (got a non-function; eager Promises are not workers)';
+
+  it('eager Promise first + valid success -> TypeError (not masked)', async () => {
+    const unsub = trackUnhandled();
+    const e = await any([Promise.resolve('x') as never, async () => 'y']).then(
+      () => null,
+      (err) => err,
+    );
+    expect(e).toBeInstanceOf(TypeError);
+    expect(e.message).toBe(INVALID_MESSAGE);
+    await new Promise((res) => setTimeout(res, 10));
+    expect(unhandled).toEqual([]);
+    unsub();
   });
 
-  it('all candidates are eager Promises -> AggregateError with the TypeError', async () => {
-    const e = await any([Promise.resolve('x') as never]).then(
+  it('eager REJECTED Promise + success -> TypeError, no unhandled rejection', async () => {
+    const unsub = trackUnhandled();
+    const eager = Promise.reject(new Error('already started'));
+    const e = await any([eager as never, async () => 'y']).then(
+      () => null,
+      (err) => err,
+    );
+    expect(e).toBeInstanceOf(TypeError);
+    await new Promise((res) => setTimeout(res, 10));
+    expect(unhandled).toEqual([]); // eager rejection observed, not leaked
+    unsub();
+  });
+
+  it('valid success + invalid later -> TypeError (invalid cannot be hidden)', async () => {
+    const e = await any([async () => 'y', 42 as never]).then(
+      () => null,
+      (err) => err,
+    );
+    expect(e).toBeInstanceOf(TypeError);
+  });
+
+  it('null + success -> TypeError', async () => {
+    const e = await any([null as never, async () => 'y']).then(
+      () => null,
+      (err) => err,
+    );
+    expect(e).toBeInstanceOf(TypeError);
+  });
+
+  it('number + success -> TypeError', async () => {
+    const e = await any([7 as never, async () => 'y']).then(
+      () => null,
+      (err) => err,
+    );
+    expect(e).toBeInstanceOf(TypeError);
+  });
+
+  it('object + success -> TypeError', async () => {
+    const e = await any([{ a: 1 } as never, async () => 'y']).then(
+      () => null,
+      (err) => err,
+    );
+    expect(e).toBeInstanceOf(TypeError);
+  });
+
+  it('multiple invalids -> TypeError', async () => {
+    const e = await any([null as never, 'str' as never, 42 as never]).then(
+      () => null,
+      (err) => err,
+    );
+    expect(e).toBeInstanceOf(TypeError);
+  });
+
+  it('invalid workers do NOT appear as AggregateError.errors on legit all-fail', async () => {
+    // A valid all-fail still yields AggregateError with ONLY the legitimate
+    // worker reasons; the malformed-input path is a separate TypeError outcome.
+    const e = await any([
+      () => Promise.reject('A'),
+      () => Promise.reject('B'),
+    ]).then(
       () => null,
       (err) => err,
     );
     expect(e).toBeInstanceOf(AggregateError);
-    expect(e.errors[0]).toBeInstanceOf(TypeError);
-    expect(e.errors[0].message).toBe('fn is not a function');
+    expect(e.errors).toEqual(['A', 'B']);
   });
 
   it('rejects non-iterable input', async () => {
