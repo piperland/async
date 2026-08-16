@@ -3,7 +3,7 @@
 // browser consumer works with the published output, not src/ internals.
 // Run via test/browser/run-browser-test.mjs (Playwright + headless Chromium).
 
-import { map, race, retry, scope, timeout } from '../../dist/index.js';
+import { any, map, race, retry, scope, timeout } from '../../dist/index.js';
 
 const results = [];
 function check(name, cond, extra = '') {
@@ -154,6 +154,57 @@ async function main() {
     { concurrency: 3 },
   );
   check('map:concurrency-bounded', maxActive <= 3, `maxActive=${maxActive}`);
+
+  // any: first worker rejects, second fulfills, third is cancelled -> second wins
+  let anyLoserCancelled = false;
+  const anyWinner = await any([
+    async () => {
+      await new Promise((r) => setTimeout(r, 5));
+      throw new Error('fast-fail');
+    },
+    async () => {
+      await new Promise((r) => setTimeout(r, 20));
+      return 'second-success';
+    },
+    async (signal) => {
+      await new Promise((_r, rej) => {
+        signal.addEventListener(
+          'abort',
+          () => {
+            anyLoserCancelled = true;
+            rej(signal.reason);
+          },
+          { once: true },
+        );
+      });
+      return 'slow-loser';
+    },
+  ]);
+  check('any:first-success', anyWinner === 'second-success');
+  check('any:loser-cancelled', anyLoserCancelled);
+
+  // any: all fail -> AggregateError
+  const anyErr = await any([
+    async () => {
+      throw 'one';
+    },
+    async () => {
+      throw 2;
+    },
+  ]).then(
+    () => null,
+    (e) => e,
+  );
+  check(
+    'any:aggregate-error',
+    typeof AggregateError === 'function' && anyErr instanceof AggregateError,
+  );
+  check(
+    'any:aggregate-errors-input-order',
+    Array.isArray(anyErr?.errors) &&
+      anyErr.errors[0] === 'one' &&
+      anyErr.errors[1] === 2,
+  );
 
   const failed = results.filter((r) => !r.ok);
   console.log(

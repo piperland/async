@@ -8,9 +8,10 @@
 //   timeout cleans up
 //   retry stops on parent abort
 //   race waits loser teardown
+//   any returns first success / AggregateError on all-fail
 //   map bounds concurrency
 
-import { map, race, retry, scope, timeout } from '../dist/index.js';
+import { any, map, race, retry, scope, timeout } from '../dist/index.js';
 
 let passed = 0;
 let failed = 0;
@@ -140,6 +141,64 @@ async function main() {
   ]);
   assert(winner === 'winner', 'race returns winner');
   assert(loserCleaned, 'race waits for loser teardown');
+
+  // any returns first SUCCESS even when a faster candidate rejects
+  let anyLoserCancelled = false;
+  const anyWinner = await any([
+    async () => {
+      await new Promise((r) => setTimeout(r, 5));
+      throw new Error('fast-fail');
+    },
+    async () => {
+      await new Promise((r) => setTimeout(r, 20));
+      return 'second-success';
+    },
+    async (signal) => {
+      await new Promise((_r, rej) => {
+        signal.addEventListener(
+          'abort',
+          () => {
+            anyLoserCancelled = true;
+            rej(signal.reason);
+          },
+          { once: true },
+        );
+        setTimeout(() => {}, 200);
+      });
+      return 'slow-loser';
+    },
+  ]);
+  assert(
+    anyWinner === 'second-success',
+    'any returns first success after a rejection',
+  );
+  assert(
+    anyLoserCancelled,
+    'any cancels the slow loser after a success is selected',
+  );
+
+  // any all-fail -> AggregateError
+  const anyErr = await any([
+    async () => {
+      throw 'one';
+    },
+    async () => {
+      throw 2;
+    },
+  ]).then(
+    () => null,
+    (e) => e,
+  );
+  assert(
+    anyErr instanceof AggregateError,
+    'any all-fail rejects with AggregateError',
+  );
+  assert(
+    Array.isArray(anyErr?.errors) &&
+      anyErr.errors[0] === 'one' &&
+      anyErr.errors[1] === 2,
+    'any AggregateError preserves reasons in input order',
+  );
 
   // map bounds concurrency
   let active = 0;

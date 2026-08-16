@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- import type from dist
 import type { Scope } from '../../dist/index.js';
-import { map, race, retry, scope, timeout } from '../../dist/index.js';
+import { any, map, race, retry, scope, timeout } from '../../dist/index.js';
 
 describe('piper in cloudflare workers (workerd)', () => {
   it('scope spawn returns value', async () => {
@@ -132,5 +132,51 @@ describe('piper in cloudflare workers (workerd)', () => {
       { concurrency: 3 },
     );
     expect(maxActive).toBeLessThanOrEqual(3);
+  });
+
+  it('any returns first success and cancels the slow loser', async () => {
+    let loserCancelled = false;
+    const winner = await any([
+      async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        throw new Error('fast-fail');
+      },
+      async () => {
+        await new Promise((r) => setTimeout(r, 20));
+        return 'second-success';
+      },
+      async (signal) => {
+        await new Promise((_r, rej) => {
+          signal.addEventListener(
+            'abort',
+            () => {
+              loserCancelled = true;
+              rej(signal.reason);
+            },
+            { once: true },
+          );
+        });
+        return 'slow-loser';
+      },
+    ]);
+    expect(winner).toBe('second-success');
+    expect(loserCancelled).toBe(true);
+  });
+
+  it('any all-fail rejects with AggregateError', async () => {
+    const err = await any([
+      async () => {
+        throw 'one';
+      },
+      async () => {
+        throw 2;
+      },
+    ]).then(
+      () => null,
+      (e) => e,
+    );
+    expect(typeof AggregateError).toBe('function');
+    expect(err).toBeInstanceOf(AggregateError);
+    expect(err.errors).toEqual(['one', 2]);
   });
 });
