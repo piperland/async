@@ -55,7 +55,7 @@
     "release:check": "corepack pnpm typecheck && corepack pnpm lint && corepack pnpm test && corepack pnpm build && corepack pnpm pack --dry-run && node scripts/release-guard.mjs --no-registry"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.8",
+    "@biomejs/biome": "2.5.9",
     "@cloudflare/vitest-pool-workers": "0.21.3",
     "@types/node": "26.2.0",
     "expect-type": "^1.4.0",
