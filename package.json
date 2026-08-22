@@ -66,6 +66,6 @@
     "playwright": "1.62.1",
     "tinybench": "^4.1.0",
     "typescript": "7.0.2",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   }
 }
